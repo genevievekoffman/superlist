@@ -1,0 +1,103 @@
+Design:
+
+  I will have a record template:  
+      -key: every record has a unique key (int)
+      -data: pointer to an int that stores data
+      -next: pointer to the next record in its level
+      -drop: pointer to the record on the level underneath
+          (has the same key & points to the same data) 
+          ~ground level nodes will all have down = NULL
+         ~so only promoted records/nodes will have down values
+  
+  variables defined at the top: 
+     -probability percent
+      -counter:maintains the number of steps performed on the repository (anytime a pointer points to another record in any level, increments by 1 
+      -number of levels
+      -ground size (amount of nodes in ground level aka how many 'unique records' exist in super list
+      -returns 0 if success and returns -1 if there was an issue
+ 
+  I will create my sentinel record/node: this will point to the top left record at all times
+  
+  I will build a stack structure that holds pointers to records 
+      -each pointer should belong to a different level
+      -last in, first out -> most recent pointer inserted will be the first one I use and remove
+      -I need to write 2 functions for my stack: pop() and push()
+  
+  pointer node struct:
+      -will have a pointer to a record
+      -will have a pointer to the next node in its stack
+  
+  I will create a stack head: this will be the most recent pointer/head of the stack
+  I will initialize the stack and set the stack head to NULL
+  
+  push function:
+      -pass it a pointer that points to a record within rep & save that in the new pointer node
+      -creates a new pointer node and allocates dynamic memory for it
+      -adds the pointer to the top of the stack by setting the previous pointer node to the new node and set the new node to the stack head
+  
+  pop function:
+      -i won’t pass it any parameters because pop() will always remove the top node in our stack
+      -to remove the top node/stack_head - i need a temporary pointer for the old stack head, then I can update the new stack_head and free the old one
+      -function will return a pointer to a record (the one that the stack head we are deleting was holding) - I use this to facilitate the print function
+  
+  repository init function:
+      -allocate dynamic memory for the sentinel node
+      -set its key, data, drop and next to NULL or 0
+      -set the probability percent to the int p passed in 
+  
+  Repository_update function:
+      -pass it a key(int) and data(int)
+      -create/init a stack
+      -starting at the sentinel (top left node), search the level for key (the searching node needs to point to the node before so we can save it if need be)
+          -as long as its not NULL, look at the next records key 
+          
+           -either the key is found: update data with new data & return 0
+           -or the next key > key we are searching for 
+               -so we drop to the level below/move down & push this pointer to our stack
+           -if we are on the ground level, meaning nodes down = NULL then we are done traversing and our stack now has all the pointers in it
+           
+           -loop through stack and for each stack element(which is a pointer on a dif level): insert the new node & update its adjacent nodes & delete that element from stack
+               ~allocate memory, store key and data(if we are on ground level-allocate memory space for the data value, the rest will point here) 
+           -call rand100() to see if record is promoted - if its not, we are done and return 1 (also done when the stackhead = NULL)
+  
+          -in the case that the node is promoted and there is no level above, we must create a new level
+              -create a new sentinel node and set its next to the promoted node
+  
+          -anytime I exit/return this function, I must free the elements in my stack
+ 
+ Repository_delete function:
+      -pass it a key(int)
+       -the same way we traversed the list above (search a level until matching key is found, push it to stack & drop down a level, repeat)
+       -when we delete the node on the ground level, we also need to free the data so we don't have a memory leak
+       -go through the stack and delete each node (the stack will point to the record that comes before the node we will delete)
+       -update its adjacent nodes next values and free the node & pop that levels pointer from the stack
+       -once its deleted on all levels(pointer stack is empty) then return 1;
+   
+      -in the case that the record being deleted is the only node on a level:
+           -we must delete the level by deleting the sentinel node & update the sentinel node to the old sentinels down
+           -also, in times when there are multiple levels with just that node on the level, delete the level but don't update the sentinel, just update the above levels downs
+           -but we can never delete the sentinel node on the ground level because we need that
+   
+       -if the key is not found (we stop traversing once a key that is greater than it is found on ground level) return 0
+   
+   repository_get function:
+       -pass it a key(int) and a data(a pointer to int, I will store the associated data here)
+      -in the same way as the above methods, I traverse my repository until I find the matching key
+      -once I find the first occurrence of key, I can simply set data = the nodes data & return 1
+      -on ground level: if the key isn’t found (meaning I find a key > the key we are looking for) I can just return 0 since I know it can’t exist past that point
+  
+  Repository_print:
+      -pass it print_elements(int)
+      -if print_elements == 1: print the list of unique records aka i will just print the nodes on the ground level
+      -if print_elements == 2: i will print the list of records in each level nicely:
+          -I will print it vertically (meaning left is the ground level, next column is the second level etc)
+                  -I will have an array of size: however many levels and I will set all elements to 0 first
+              1. Be on the ground level and look at the first node
+              3. How many levels is it on?
+                  -start from the sentinel node and traverse that level, if its found, increment a counter, if its not, drop until we reach the ground level
+              4. Then print the node the amount of times it appeared in the levels
+              5. Now move to the next node on the ground level
+  
+          To keep track of how many records are in a specific level ^^ when we loop through to print vertically and track how many times a node appears, we increment the levels by 1
+  
+  -if print_elements is something else, I wont print any specific records but I will run the above code so I can count how many nodes are on each level
